@@ -73,9 +73,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
   String top = String(topic);
 
   if ( top.startsWith( LAMP_TOP ) ) {
-    
+    ctrl.IncomingCommand( LAMP, topic );
   } else if ( top.startsWith( RGB_TOP ) ) {
-    
+    ctrl.IncomingCommand( RGB_STRIP, topic );
   }
 
   // Switch on the LED if an 1 was received as first character
@@ -115,7 +115,6 @@ void reconnect() {
 }
 
 void setup() {
-  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
   Serial.begin(115200);
   setup_wifi();
   client.setServer(mqtt_server, 1883);
@@ -131,4 +130,5 @@ void loop() {
   }
   client.loop();
 
+  ctrl.loop();
 }
