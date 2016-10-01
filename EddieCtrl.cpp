@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <stdlib.h>
 
 #include "EddieCtrl.h"
 #include "hsv.h"
@@ -73,6 +74,8 @@ EddieCtrl::IncomingCommand( EddieDevProperty prop, char* cmd )
       IncomingCommand( prop, FADE_TO, Color(p2) );
     } else if ( strncmp(cmd, "pulse",p) == 0 ) {
       IncomingCommand( prop, PULSE, Color(p2) );
+    } else if ( strncmp(cmd, "speed",p) == 0 ) {
+      IncomingCommand( prop, SPEED, atoi(p2) );
     }
   }
 }
@@ -86,6 +89,12 @@ EddieCtrl::IncomingCommand( EddieDevProperty prop, EddieDevCommand cmd )
 
 void
 EddieCtrl::IncomingCommand( EddieDevProperty prop, EddieDevCommand cmd, Color col )
+{
+  
+}
+
+void
+EddieCtrl::IncomingCommand( EddieDevProperty prop, EddieDevCommand cmd, int num )
 {
   
 }

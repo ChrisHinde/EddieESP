@@ -40,7 +40,8 @@ enum EddieDevCommand
   DIM_TO  = 21,
   FADE_TO = 22,
 
-  STOP = 99
+  SPEED = 98,
+  STOP  = 99
 };
 
 /**
@@ -53,6 +54,7 @@ class EddieCtrl
 
     void IncomingCommand( EddieDevProperty prop, char* cmd );
     void IncomingCommand( EddieDevProperty prop, EddieDevCommand cmd );
+    void IncomingCommand( EddieDevProperty prop, EddieDevCommand cmd, int num );
     void IncomingCommand( EddieDevProperty prop, EddieDevCommand cmd, Color col );
     //void IncomingCommand( EddieDevProperty prop, EddieDevCommand cmd, RgbColor col );
 
