@@ -70,21 +70,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println();
 
-  String top = String(topic);
+  payload[length] = 0; // Terminate the string
 
-  if ( top.startsWith( LAMP_TOP ) ) {
-    ctrl.IncomingCommand( LAMP, topic );
-  } else if ( top.startsWith( RGB_TOP ) ) {
-    ctrl.IncomingCommand( RGB_STRIP, topic );
-  }
-
-  // Switch on the LED if an 1 was received as first character
-  if ((char)payload[0] == '1') {
-    digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
-    // but actually the LED is on; this is because
-    // it is acive low on the ESP-01)
-  } else {
-    digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
+ // Direct incoming topic to the right "property"
+  if ( strcmp( topic, LAMP_TOP ) == 0 ) {
+    ctrl.IncomingCommand( LAMP, (char*)payload );
+  } else if ( strcmp( topic, RGB_TOP ) == 0 ) {
+    ctrl.IncomingCommand( RGB_STRIP, (char*)payload );
   }
 }
 
@@ -120,6 +112,8 @@ void setup() {
   client.setCallback(callback);
 
   ctrl = EddieCtrl();
+  ctrl.RegisterProperty( new RgbStripProperty() );
+  ctrl.RegisterProperty( new LampProperty() );
 }
 
 void loop() {
@@ -129,4 +123,5 @@ void loop() {
   }
   client.loop();
 
+  ctrl.Loop();
 }
