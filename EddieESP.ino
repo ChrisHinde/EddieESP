@@ -86,7 +86,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
   } else {
     digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
   }
-
 }
 
 void reconnect() {
@@ -130,5 +129,4 @@ void loop() {
   }
   client.loop();
 
-  ctrl.loop();
 }

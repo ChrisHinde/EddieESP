@@ -10,6 +10,9 @@
 EddieCtrl::EddieCtrl()
 {
   pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
+
+  analogWriteRange(1024);
+  _prop_count = 0;
 }
 
 /**
@@ -19,6 +22,11 @@ void
 EddieCtrl::IncomingCommand( EddieDevProperty prop, char* cmd )
 {
   char *c;
+  Serial.print("IncommingCmd:");
+  Serial.print(prop);
+  Serial.print("; [");
+  Serial.print(cmd);
+  Serial.println("]");
 
   // If the first byte is '!', then treat the rest as "binary form"
   if ( cmd[0] == '!' ) {
@@ -36,6 +44,8 @@ EddieCtrl::IncomingCommand( EddieDevProperty prop, char* cmd )
     }
 
 // Recognize command and "translate" to enums
+  } else if ( stricmp(cmd, "on") == 0 ) {
+    IncomingCommand( prop, ON );
   } else if ( stricmp(cmd, "off") == 0 ) {
     IncomingCommand( prop, OFF );
   } else if ( stricmp(cmd, "stop") == 0 ) {
@@ -60,12 +70,19 @@ EddieCtrl::IncomingCommand( EddieDevProperty prop, char* cmd )
     char p2[20];
     int p = c - cmd;
     strcpy(p2, c + 1);
+    Serial.print("P:");
+    Serial.print(p);
+    Serial.print(";P2: [");
+    Serial.print(p2);
+    Serial.println("]");
 
   // Recognize command and "translate" to enums and include the data
-    if ( strncmp(cmd, "dim_to", p) == 0 ) {
-      IncomingCommand( prop, DIM_TO, Color(p2) );
+    if ( strncmp(cmd, "dim", p) == 0 ) {
+      IncomingCommand( prop, DIM, atoi(p2) );
+    } else if ( strncmp(cmd, "dim_to", p) == 0 ) {
+      IncomingCommand( prop, DIM_TO, atoi(p2) );
     } else if ( strncmp(cmd, "set_dim", p) == 0 ) {
-      IncomingCommand( prop, SET_DIM, Color(p2) );
+      IncomingCommand( prop, SET_DIM, atoi(p2) );
     } else if ( strncmp(cmd, "fade_to", p) == 0 ) {
       IncomingCommand( prop, FADE_TO, Color(p2) );
     } else if ( ( strncmp(cmd, "color", p) == 0 ) || ( strncmp(cmd, "set_color", p) == 0 ) ) {
@@ -76,7 +93,11 @@ EddieCtrl::IncomingCommand( EddieDevProperty prop, char* cmd )
       IncomingCommand( prop, PULSE, Color(p2) );
     } else if ( strncmp(cmd, "speed",p) == 0 ) {
       IncomingCommand( prop, SPEED, atoi(p2) );
+    } else {
+      Serial.print("Unknown Command w/ data!\n");
     }
+  } else {
+    Serial.print("Unknown Command!\n");
   }
 }
 
@@ -84,25 +105,46 @@ EddieCtrl::IncomingCommand( EddieDevProperty prop, char* cmd )
 void
 EddieCtrl::IncomingCommand( EddieDevProperty prop, EddieDevCommand cmd )
 {
-  
+  for ( uint8 i=0; i < _prop_count; i++ ) {
+    if ( (prop == ALL) || (_props[i]->GetID() == prop ) )
+      _props[i]->Command( cmd );
+  }
 }
 
 void
 EddieCtrl::IncomingCommand( EddieDevProperty prop, EddieDevCommand cmd, Color col )
 {
-  
+  for ( uint8 i=0; i < _prop_count; i++ ) {
+    if ( (prop == ALL) || (_props[i]->GetID() == prop ) )
+      _props[i]->Command( cmd, col );
+  }
 }
 
 void
 EddieCtrl::IncomingCommand( EddieDevProperty prop, EddieDevCommand cmd, int num )
 {
-  
+  for ( uint8 i=0; i < _prop_count; i++ ) {
+    if ( (prop == ALL) || (_props[i]->GetID() == prop ) )
+      _props[i]->Command( cmd, num );
+  }
 }
 
 
 void
-EddieCtrl::loop()
+EddieCtrl::Loop()
 {
-  
+  for ( uint8 i=0; i < _prop_count; i++ ) {
+    _props[i]->Loop();
+  }
+}
+
+
+void
+EddieCtrl::RegisterProperty( EddieProperty *prop )
+{
+  _props[_prop_count] = prop;
+  _prop_count++;
+
+  //prop->
 }
 
