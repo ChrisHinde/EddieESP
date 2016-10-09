@@ -10,20 +10,28 @@
 #define HSV_H_
 
 
-typedef struct RgbColor
+class RgbColor
 {
-  unsigned char r;
-  unsigned char g;
-  unsigned char b;
-  unsigned char w;
-} RgbColor;
+  public:
+    RgbColor() { RgbColor(0,0,0); }
+    RgbColor( uint16_t r, uint16_t g, uint16_t b, uint16_t w = 0 );
 
-typedef struct HsvColor
+    uint16_t r;
+    uint16_t g;
+    uint16_t b;
+    uint16_t w;
+  };
+
+class HsvColor
 {
-  unsigned char h;
-  unsigned char s;
-  unsigned char v;
-} HsvColor;
+  public:
+    HsvColor() { HsvColor(0,0,0); }
+    HsvColor( uint16_t h, uint16_t s, uint16_t v );
+
+    uint16_t h;
+    uint16_t s;
+    uint16_t v;
+};
 
 RgbColor HsvToRgb(HsvColor hsv);
 HsvColor RgbToHsv(RgbColor rgb);

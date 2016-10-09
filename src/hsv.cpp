@@ -6,17 +6,42 @@
  */
 
 
-#include <string.h>
+#include <Arduino.h>
 #include <stdlib.h>
 
 #include "HSV.h"
 
+RgbColor::RgbColor( uint16_t _r, uint16_t _g, uint16_t _b, uint16_t _w )
+{
+  r = _r;
+  g = _g;
+  b = _b;
+  w = _w;
+}
+
+HsvColor::HsvColor( uint16_t _h, uint16_t _s, uint16_t _v )
+{
+  h = _h;
+  s = _s;
+  v = _v;
+}
+
+/**
+ *  HsvToRgb - Convert HSV (Hue, Saturation, Value) to RGB (Red, Green, Blue)
+ *   Bosed on code from http://stackoverflow.com/a/22120275/4204058
+ *    adapted to 10 bit (0-1023 instead of 0-255)
+ *
+ *  Read more:
+ *   http://www.rapidtables.com/convert/color/hsv-to-rgb.htm
+ *   https://en.wikipedia.org/wiki/HSL_and_HSV#Converting_to_RGB
+ */
 RgbColor HsvToRgb(HsvColor hsv)
 {
   RgbColor rgb;
-  unsigned char region, p, q, t;
+  unsigned int region, p, q, t;
   unsigned int h, s, v, remainder;
 
+  // If the Saturation is 0, then use the Value for each RGB channel
   if (hsv.s == 0)
   {
     rgb.r = hsv.v;
@@ -25,18 +50,20 @@ RgbColor HsvToRgb(HsvColor hsv)
     return rgb;
   }
 
-  // converting to 16 bit to prevent overflow
   h = hsv.h;
   s = hsv.s;
   v = hsv.v;
 
-  region = h / 43;
-  remainder = (h - (region * 43)) * 6;
+  // There's 6 regions (60dgrs apart), so each region is ~171 for 0-1023
+  region = h / 171;
+  remainder = (h - (region * 171)) * 6;
 
-  p = (v * (255 - s)) >> 8;
-  q = (v * (255 - ((s * remainder) >> 8))) >> 8;
-  t = (v * (255 - ((s * (255 - remainder)) >> 8))) >> 8;
+  // Calculate values
+  p = (v * (1023 - s)) >> 10;
+  q = (v * (1023 - ((s * remainder) >> 10))) >> 10;
+  t = (v * (1023 - ((s * (1023 - remainder)) >> 10))) >> 10;
 
+  // Place values, depending on region
   switch (region)
   {
     case 0:
@@ -74,40 +101,52 @@ RgbColor HsvToRgb(HsvColor hsv)
   return rgb;
 }
 
+/**
+ * RgbToHsv - Convert RGB (Red, Green, Blue) to HSV (Hue, Saturation, Value)
+ *   Bosed on code from http://stackoverflow.com/a/22120275/4204058
+ *    adapted to 10 bit (0-1023 instead of 0-255)
+ *
+ *  Read more here:
+ *    http://www.rapidtables.com/convert/color/rgb-to-hsv.htm
+ */
 HsvColor RgbToHsv(RgbColor rgb)
 {
-  HsvColor hsv;
-  unsigned char rgbMin, rgbMax;
+  HsvColor hsv = HsvColor();
+  uint16 rgbMin, rgbMax;
 
+  // Find min and max values in the RGB channels
   rgbMin = rgb.r < rgb.g ? (rgb.r < rgb.b ? rgb.r : rgb.b) : (rgb.g < rgb.b ? rgb.g : rgb.b);
   rgbMax = rgb.r > rgb.g ? (rgb.r > rgb.b ? rgb.r : rgb.b) : (rgb.g > rgb.b ? rgb.g : rgb.b);
 
+  // Set the Value to the max RGB value
   hsv.v = rgbMax;
-  /*if (hsv.v == 0)
-  {
-    hsv.h = 0;
-    hsv.s = 0;
-    return hsv;
-  }*/
 
-  hsv.s = 255 * ((long)(rgbMax - rgbMin)) / hsv.v;
-  /*if (hsv.s == 0)
-  {
-    hsv.h = 0;
-    return hsv;
-  }*/
-
-  if (rgbMax == rgb.r)
-    hsv.h = 0 + 43 * (rgb.g - rgb.b) / (rgbMax - rgbMin);
-  else if (rgbMax == rgb.g)
-    hsv.h = 85 + 43 * (rgb.b - rgb.r) / (rgbMax - rgbMin);
+  // If the Value is 0 (black), set Saturation to 1023 (max)
+  //   This is perhaps unorthodox, but helps when we work with the HSV data later
+  if ( hsv.v == 0 )
+    hsv.s = 1023;
+  // Otherwise.. Calculate Saturation
   else
-    hsv.h = 171 + 43 * (rgb.r - rgb.g) / (rgbMax - rgbMin);
+    hsv.s = 1023 * ((long)(rgbMax - rgbMin)) / hsv.v;
+
+  // Calculate Hue
+  if ( (rgbMax - rgbMin) == 0 ) {
+    hsv.h = 0;
+  } else {
+    if (rgbMax == rgb.r)
+      hsv.h = 0 + 171 * (rgb.g - rgb.b) / (rgbMax - rgbMin);
+    else if (rgbMax == rgb.g)
+      hsv.h = 341 + 171 * (rgb.b - rgb.r) / (rgbMax - rgbMin); // 338??
+    else
+      hsv.h = 682 + 171 * (rgb.r - rgb.g) / (rgbMax - rgbMin); // 684??
+  }
 
   return hsv;
 }
 
-
+/**
+  * Convert a hex value (single character: 0-F ) to integer
+  */
 unsigned char
 hex_to_uchar( char c )
 {
@@ -125,8 +164,8 @@ hex_to_uchar( const char *c )
 
 Color::Color()
 {
-  rgb = {0,0,0};
-  hsv = {0,255,0};
+  rgb = RgbColor(0,0,0);
+  hsv = HsvColor(0,1023,0);
 }
 
 Color::Color( const char *color_string )
@@ -143,10 +182,10 @@ Color::Color( const char *color_string )
       b = hex_to_uchar(color_string[3]);
     }
 
-    rgb = { r, g, b };
+    rgb = RgbColor( r * 4, g * 4, b *4 );
     hsv = RgbToHsv( rgb );
   } else if ( color_string[3] == '(' ) { // if color_string is something like 'rgb(123,321,42)
-    unsigned char a, b, c;
+    uint16_t a, b, c;
     char* token;
     char tmp[16];
 
@@ -163,10 +202,10 @@ Color::Color( const char *color_string )
     c = atoi(token);
 
     if ( strncmp(color_string, "rgb", 3) == 0 ) {
-      rgb = { a, b, c };
+      rgb = RgbColor( a, b, c );
       hsv = RgbToHsv( rgb );
     } else if ( strncmp(color_string, "hsv", 3) == 0 ) {
-      hsv = { a, b, c };
+      hsv = HsvColor( a, b, c );
       rgb = HsvToRgb( hsv );
     }
   }
@@ -175,10 +214,10 @@ Color::Color( const char *color_string )
 Color::Color( EddieColorType type, unsigned char a, unsigned char b, unsigned char c )
 {
   if ( type == RGB ) {
-    rgb = { a, b, c };
+    rgb = RgbColor( a, b, c );
     hsv = RgbToHsv( rgb );
   } else if ( type == HSV ) {
-    hsv = { a, b, c };
+    hsv = HsvColor( a, b, c );
     rgb = HsvToRgb( hsv );
   }
 }
