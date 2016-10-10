@@ -9,12 +9,21 @@
 #ifndef HSV_H_
 #define HSV_H_
 
+enum RGBChannel
+{
+  R = 0,
+  G,
+  B,
+  W
+};
 
 class RgbColor
 {
   public:
     RgbColor() { RgbColor(0,0,0); }
     RgbColor( uint16_t r, uint16_t g, uint16_t b, uint16_t w = 0 );
+
+    uint16_t& operator[] ( RGBChannel chann );
 
     uint16_t r;
     uint16_t g;

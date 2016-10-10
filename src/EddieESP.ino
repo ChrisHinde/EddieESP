@@ -18,12 +18,9 @@
 
 #include "EddieCtrl.h"
 
-
 WiFiClient espClient;
 PubSubClient client(espClient);
-long lastMsg = 0;
 char msg[50];
-int value = 0;
 
 EddieCtrl ctrl;
 
@@ -33,7 +30,7 @@ void setup_wifi() {
   //Serial.setDebugOutput(true);
   // We start by connecting to a WiFi network
   Serial.println();
-  Serial.print("Connecting to ");
+  Serial.print("Conto ");
   Serial.println(ssid);
 
   //WiFi.setOutputPower(0);
@@ -43,16 +40,11 @@ void setup_wifi() {
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
-    delay(2000);
+    delay(750);
 
     Serial.print(WiFi.status());
+    yield();
     //WiFi.printDiag(Serial);
-
-/*    value = 1 - value;
-    if ( value )
-      digitalWrite(BUILTIN_LED, HIGH);
-    else
-      digitalWrite(BUILTIN_LED, LOW);*/
   }
   delay(5000);
 
@@ -60,8 +52,8 @@ void setup_wifi() {
 /*
   Serial.println("----");
   Serial.println("WiFi connected");*/
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  /*Serial.println("IPa: ");
+  Serial.println(WiFi.localIP());*/
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -79,14 +71,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if ( strcmp( topic, LAMP_TOP ) == 0 ) {
     ctrl.IncomingCommand( LAMP, (char*)payload );
   } else if ( strcmp( topic, RGB_TOP ) == 0 ) {
-//    ctrl.IncomingCommand( RGB_STRIP, (char*)payload );
+    ctrl.IncomingCommand( RGB_STRIP, (char*)payload );
   }
 }
 
 void reconnect() {
   // Loop until we're reconnected
   while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
+    Serial.print("AtMQTTconn...");
     // Create a random client ID
     String clientId = "EddieMCU-";
     clientId += String(random(0xffff), HEX);
@@ -98,10 +90,10 @@ void reconnect() {
       // ... and resubscribe
       client.subscribe(INFO_TOPIC);
       client.subscribe(LAMP_TOP);
+      client.subscribe(RGB_TOP);
     } else {
-      Serial.print("failed, rc=");
+      Serial.print("f!, rc=");
       Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
       // Wait 5 seconds before retrying
       delay(5000);
     }
@@ -110,19 +102,25 @@ void reconnect() {
 
 void setup() {
   Serial.begin(115200);
+
+  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
+
+  ctrl = EddieCtrl();
+  ctrl.RegisterProperty( new RgbStripProperty() );
+//  ctrl.RegisterProperty( new LampProperty() );*/
+
   setup_wifi();
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
 
-  Serial.println("SETUP DONE!");
+  delay(100);
+//  rgbStrip = new RgbStripProperty();
+//  RgbStripPrperty();
 
-  ctrl = EddieCtrl();
-  ctrl.RegisterProperty( new RgbStripProperty() );
-  ctrl.RegisterProperty( new LampProperty() );
+    Serial.println("SETUP DONE!");
 }
 
 void loop() {
-
   if (!client.connected()) {
     reconnect();
   }

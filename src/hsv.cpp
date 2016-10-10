@@ -19,6 +19,21 @@ RgbColor::RgbColor( uint16_t _r, uint16_t _g, uint16_t _b, uint16_t _w )
   w = _w;
 }
 
+uint16_t&
+RgbColor::operator[](RGBChannel chann)
+{
+  switch (chann) {
+    case R:
+      return r;
+    case G:
+      return g;
+    case B:
+      return b;
+    case W:
+      return w;
+  }
+}
+
 HsvColor::HsvColor( uint16_t _h, uint16_t _s, uint16_t _v )
 {
   h = _h;
