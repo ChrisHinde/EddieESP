@@ -25,19 +25,23 @@ enum EddieDevCommand
 {
   OFF  = 0,
   ON   = 1,
-  FADE = 2,
-  FADE_HUE = 3,
-  DIM      = 4,
-  PULSE    = 5,
-  FLASH    = 6, BLINK = 6,
-  WANDER   = 7,
-  JUMP     = 8,
+
+  // Dim/Brightness commands
+  DIM       = 2,
+  PULSE     = 3,
+  FLASH     = 4, BLINK = 4,
+  // Color commands
+  FADE      = 5,
+  FADE_HUE  = 6,
+  WANDER    = 7,
+  JUMP      = 8,
+  LIGHTNING = 9,
 
   SET_DIM   = 11,
   SET_COLOR = 12,
-  SET_HUE = 13,
-  SET_SAT = 14,
-  SET_VAL = 15,
+  SET_HUE   = 13,
+  SET_SAT   = 14,
+  SET_VAL   = 15,
 
   DIM_TO  = 21,
   FADE_TO = 22,
@@ -66,7 +70,6 @@ class EddieProperty
   protected:
     EddieDevCommand _command;
 };
-
 class RgbStripProperty : public EddieProperty
 {
   public:
@@ -81,17 +84,20 @@ class RgbStripProperty : public EddieProperty
     EddieDevProperty GetID() { return RGB_STRIP; }
 
   private:
-    void _setColor( Color &color );
+    void _setColor( Color color );
 
     unsigned long _last_ms  = 0;
     unsigned int _curr_dim = RGB_DIM_DEF;
     unsigned int _speed    = RGB_SPEED;
     unsigned int _dim_to  = RGB_DIM_DEF;
-    uint8_t  _curr_dir = 1;
+    int8_t  _curr_dir = 1;
+
+    RGBChannel _curr_channel;
 
     Color _curr_color;
     Color _dest_color;
 };
+
 class LampProperty : public EddieProperty
 {
   public:

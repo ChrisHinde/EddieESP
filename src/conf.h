@@ -24,15 +24,16 @@
 #define LAMP_SPEED 10
 #define RGB_TOP "eddie/states/room/desk_rgb"
 #define RGB_INT 50
-#define RGB_DIM_DEF 0
-#define RGB_DEF Color((RgbColor){ 0, 0, 0 })
-#define RGB_HSV_DEF { 0, 0, 0 }
-#define RGB_SPEED 10
+#define RGB_DEF_CMD OFF
+#define RGB_DIM_DEF 1023
+#define RGB_DEF RgbColor(1023,0,0)
+//#define RGB_HSV_DEF HsvColor( 0, 0, 0 )
+#define RGB_SPEED 500
 
-#define RGB_R_PIN 1
-#define RGB_G_PIN 2
-#define RGB_B_PIN 3
-//#define RGB_W_PIN 4 // Uncomment this if your RGB strip/lamp/output has a white component
+#define RGB_R_PIN D1
+#define RGB_G_PIN D2
+#define RGB_B_PIN D3
+//#define RGB_W_PIN D4 // Uncomment this if your RGB strip/lamp/output has a white component
 
 #define RGB_MAX 1023
 #define PWM_MAX 1023
