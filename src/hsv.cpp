@@ -9,7 +9,7 @@
 #include <Arduino.h>
 #include <stdlib.h>
 
-#include "HSV.h"
+#include "hsv.h"
 
 RgbColor::RgbColor( uint16_t _r, uint16_t _g, uint16_t _b, uint16_t _w )
 {
