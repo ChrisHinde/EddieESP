@@ -36,6 +36,7 @@ enum EddieDevCommand
   WANDER    = 7,
   JUMP      = 8,
   LIGHTNING = 9,
+  FLICKER   = 10,
 
   SET_DIM   = 11,
   SET_COLOR = 12,
@@ -117,7 +118,7 @@ class LampProperty : public EddieProperty
     uint16 _curr_dim = LAMP_DEF;
     uint16 _speed    = LAMP_SPEED;
     uint16 _dim_to  = 0;
-    int8  _curr_dir = 1;
+    int   _curr_dir = 1;
 
 };
 

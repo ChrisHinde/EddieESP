@@ -43,6 +43,8 @@ RgbStripProperty::Command( EddieDevCommand cmd )
   Serial.print("RGB Command: ");
   Serial.println(cmd);
 
+  _curr_dir = 1;
+
   if ( cmd == ON ) {
      _curr_dim = PWM_MAX;
      _setColor(_curr_color);
@@ -63,17 +65,18 @@ RgbStripProperty::Command( EddieDevCommand cmd )
 
     _dim_to = _curr_dim;
   } else if ( cmd == FADE ) {
-    _curr_dir = 1;
     _curr_channel = G;
     _curr_color.rgb = RgbColor(1023,0,0); // Start at red (this is the simplest way when fading RGB)
     _curr_color.RgbUpdated();
   } else if ( cmd == FADE_HUE ) {
-    _curr_dir = 1;
+//    _curr_dir = 1;
   } else if ( cmd == WANDER ) {
-    _curr_dir = 1;
     _dest_color = _curr_color;
+  } else if ( cmd == FLICKER ) {
+    _dest_color = _curr_color;
+    _curr_dir = 0;
   } else if ( cmd == LIGHTNING ) {
-    _curr_color.rgb = RgbColor(1010,1010,1023); // Very slighly bluish white
+    _curr_color.rgb = RgbColor(960,960,1023); // Very slighly bluish white
     _curr_color.RgbUpdated();
   }
 
@@ -83,12 +86,12 @@ RgbStripProperty::Command( EddieDevCommand cmd )
 void
 RgbStripProperty::Command( EddieDevCommand cmd, int num )
 {
+  _curr_dir = 1;
+
   if ( cmd == DIM_TO ) {
     _dim_to = num;
     if ( _dim_to < _curr_dim )
       _curr_dir = -1;
-    else
-      _curr_dir = 1;
 
     Serial.print("RGB_DIM_TO:");
     Serial.println(_dim_to);
@@ -135,6 +138,8 @@ RgbStripProperty::Command( EddieDevCommand cmd, int num )
 void
 RgbStripProperty::Command( EddieDevCommand cmd, Color col )
 {
+  _curr_dir = 1;
+
   if ( cmd == FADE_TO) {
     _dest_color = col;
   } else {
@@ -151,7 +156,7 @@ RgbStripProperty::Command( EddieDevCommand cmd, Color col )
 void
 RgbStripProperty::_setColor( Color color )
 {
-  Serial.print("SetColor(");
+  //Serial.print("SetColor(");
   uint16_t r, g, b;
   r = color.rgb.r;
   g = color.rgb.g;
@@ -161,10 +166,10 @@ RgbStripProperty::_setColor( Color color )
   Serial.print(g);
   Serial.print(',');
   Serial.print(b);
-  Serial.print(';');
+  Serial.println(';');
 
   float dim = ((float)_curr_dim) / PWM_MAX;
-  Serial.print(_curr_dim);
+/*  Serial.print(_curr_dim);
   Serial.println(')');
   /*Serial.print(PWM_MAX);
   Serial.print('=');
@@ -221,6 +226,9 @@ RgbStripProperty::Loop()
   if ( (millis() - _last_ms) < _speed )
     return;
 
+  // Update the timestamp
+  _last_ms = millis();
+
   // PULSE dims the RGB up and down (pulsing)
   if ( _command == PULSE ) {
     // Step up/down
@@ -260,7 +268,6 @@ RgbStripProperty::Loop()
   } else if ( _command == FADE ) {
     // Step up/down the current channel
     _curr_color.rgb[_curr_channel] += _curr_dir;
-    Serial.print(_curr_channel);
 
     // We reached the end of this channel
     if (_curr_color.rgb[_curr_channel] >= 1023) {
@@ -315,24 +322,32 @@ RgbStripProperty::Loop()
   // Wander through random colors (like JUMP, but with fading)
   } else if ( _command == WANDER ) {
     // If we reached the destination hue/color
-    if ( _curr_color.hsv.h == _dest_color.hsv.h ) {
+    if ( (_curr_color.rgb.r == _dest_color.rgb.r) &&
+          (_curr_color.rgb.g == _dest_color.rgb.g) &&
+          (_curr_color.rgb.b == _dest_color.rgb.b) ) {
       // Select a random hue to fade to
       _dest_color.hsv.h = random(1023);
       _dest_color.HsvUpdated();
-
-      // If the destination hue is greater than current hue, go down
-      if ( _dest_color.hsv.h > _curr_color.hsv.h )
-        _curr_dir = -1;
-      // Otherwise, go up.
-      else
-        _curr_dir = 1;
     }
 
-    // Take a step around the "hue circle"
-    _curr_color.hsv.h += _curr_dir;
+    if ( _curr_color.rgb.r > _dest_color.rgb.r )
+      _curr_color.rgb.r--;
+    else if ( _curr_color.rgb.r < _dest_color.rgb.r )
+      _curr_color.rgb.r++;
 
-    // Indicate that the HSV data was updated (convert it to RGB)
-    _curr_color.HsvUpdated(); // This is needed, since the output is RGB!
+    if ( _curr_color.rgb.g > _dest_color.rgb.g )
+      _curr_color.rgb.g--;
+    else if ( _curr_color.rgb.g < _dest_color.rgb.g )
+      _curr_color.rgb.g++;
+
+    if ( _curr_color.rgb.b > _dest_color.rgb.b )
+      _curr_color.rgb.b--;
+    else if ( _curr_color.rgb.b < _dest_color.rgb.b )
+      _curr_color.rgb.b++;
+
+
+    // Indicate that the RGB data was updated (convert it to HSV)
+    _curr_color.RgbUpdated();
 
   // Jump through random colors (or hues, because hues are eaiser to randomize)
   //  Besides, then you can adjust Saturation and Value/Brightness
@@ -342,13 +357,35 @@ RgbStripProperty::Loop()
 
     // Indicate that the HSV data was updated (convert it to RGB)
     _curr_color.HsvUpdated(); // This is needed, since the output is RGB!
+
+  // Flicker the current color (could simulate fire or candle flame)
+  } else if ( _command == FLICKER ) {
+    // We use _curr_dir and _dim_to to not have to allocate another variable (and it's unused in this state)
+    //  This might be subject to change in the future!!!
+
+    // Calculate a change for hue (from "default") (can go +-4)
+    _dim_to = (int)((double)random(4.0) * sin((double)_curr_dir / 255.0 * 2 * PI));
+    _curr_color.hsv.h = _dest_color.hsv.h + _dim_to;
+
+    // Calculate a change for Saturation (from "default") (can go +-2)
+    _dim_to = (int)((double)random(2.0) * sin((double)_curr_dir / 255.0 * 2 * PI));
+    _curr_color.hsv.s = _dest_color.hsv.s + _dim_to;
+
+    // Calculate a change for value (from "default") (can go +-5)
+    _dim_to = (int)((double)random(5.0) * sin((double)_curr_dir / 255.0 * 2 * PI));
+    _curr_color.hsv.v = _dest_color.hsv.v + _dim_to;
+
+    _curr_dir++;
+    if ( _curr_dir == 1024 )
+      _curr_dir = 0;
+
+    _curr_color.HsvUpdated();
+
+    _last_ms -= random(90);
   }
 
   // Change the RGB output
   _setColor( _curr_color );
-
-  // Update the timestamp
-  _last_ms = millis();
 }
 
 LampProperty::LampProperty()

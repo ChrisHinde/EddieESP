@@ -61,6 +61,10 @@ EddieCtrl::IncomingCommand( EddieDevProperty prop, char* cmd )
     IncomingCommand( prop, WANDER );
   } else if ( stricmp(cmd, "jump") == 0 ) {
     IncomingCommand( prop, JUMP );
+  } else if ( stricmp(cmd, "flicker") == 0 ) {
+    IncomingCommand( prop, FLICKER );
+  } else if ( stricmp(cmd, "lightning") == 0 ) {
+    IncomingCommand( prop, LIGHTNING );
   } else if ( stricmp(cmd, "dim") == 0 ) {
     IncomingCommand( prop, DIM );
 
@@ -100,6 +104,8 @@ EddieCtrl::IncomingCommand( EddieDevProperty prop, char* cmd )
       IncomingCommand( prop, FLASH, Color(p2) );
     } else if ( strncmp(cmd, "pulse",p) == 0 ) {
       IncomingCommand( prop, PULSE, Color(p2) );
+    } else if ( strncmp(cmd, "flicker",p) == 0 ) {
+      IncomingCommand( prop, FLICKER, Color(p2) );
     } else if ( strncmp(cmd, "speed",p) == 0 ) {
       IncomingCommand( prop, SPEED, atoi(p2) );
     } else {
