@@ -2,6 +2,7 @@
 #define EDDIEPROP_H_
 
 #include "conf.h"
+#include "extra.h"
 #include "hsv.h"
 
 /**
@@ -37,18 +38,19 @@ enum EddieDevCommand
   JUMP      = 8,
   LIGHTNING = 9,
   FLICKER   = 10,
+  PATTERN   = 11,
 
-  SET_DIM   = 11,
-  SET_COLOR = 12,
-  SET_HUE   = 13,
-  SET_SAT   = 14,
-  SET_VAL   = 15,
+  SET_DIM   = 21,
+  SET_COLOR = 22,
+  SET_HUE   = 23,
+  SET_SAT   = 24,
+  SET_VAL   = 25,
 
-  DIM_TO  = 21,
-  FADE_TO = 22,
-  FADE_HUE_TO = 23,
-  FADE_SAT_TO = 24,
-  FADE_VAL_TO = 25,
+  DIM_TO  = 31,
+  FADE_TO = 32,
+  FADE_HUE_TO = 33,
+  FADE_SAT_TO = 34,
+  FADE_VAL_TO = 35,
 
   SPEED = 98,
   STOP  = 99
@@ -90,13 +92,15 @@ class RgbStripProperty : public EddieProperty
     unsigned long _last_ms  = 0;
     unsigned int _curr_dim = RGB_DIM_DEF;
     unsigned int _speed    = RGB_SPEED;
-    unsigned int _dim_to  = RGB_DIM_DEF;
-    int8_t  _curr_dir = 1;
-
-    RGBChannel _curr_channel;
+    unsigned int _dim_to   = RGB_DIM_DEF;
+    int  _curr_dir = 1;
 
     Color _curr_color;
     Color _dest_color;
+
+    RGBChannel _curr_channel;
+    HsvColor _hsv_temp;
+    IntTrip _hsv_diff;
 };
 
 class LampProperty : public EddieProperty
