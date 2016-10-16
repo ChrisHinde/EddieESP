@@ -206,6 +206,7 @@ Color::Color( const char *color_string )
 
     a = strlen(color_string) - 5;
     strncpy(tmp, color_string + 4, a); // tmp should now be like '123,321,42'
+    tmp[a] = 0;
 
     token = strtok(tmp,",");
     a = atoi(token);
@@ -213,7 +214,7 @@ Color::Color( const char *color_string )
     token = strtok(NULL,",");
     b = atoi(token);
 
-    token = strtok(NULL,",");
+    token = strtok(NULL,")");
     c = atoi(token);
 
     if ( strncmp(color_string, "rgb", 3) == 0 ) {
