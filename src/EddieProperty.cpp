@@ -65,19 +65,35 @@ RgbStripProperty::Command( EddieDevCommand cmd )
 
     _dim_to = _curr_dim;
   } else if ( cmd == FADE ) {
+    if ( _curr_dim == 0 )
+      _curr_dim = PWM_MAX;
+
     _curr_channel = G;
     _curr_color.rgb = RgbColor(1023,0,0); // Start at red (this is the simplest way when fading RGB)
     _curr_color.RgbUpdated();
   } else if ( cmd == FADE_HUE ) {
+    if ( _curr_dim == 0 )
+      _curr_dim = PWM_MAX;
 //    _curr_dir = 1;
   } else if ( cmd == WANDER ) {
+    if ( _curr_dim == 0 )
+      _curr_dim = PWM_MAX;
+
     _dest_color = _curr_color;
   } else if ( cmd == FLICKER ) {
+    if ( _curr_dim == 0 )
+      _curr_dim = PWM_MAX;
+
     _dest_color = _curr_color;
     _curr_dir = 0;
   } else if ( cmd == LIGHTNING ) {
-    _curr_color.rgb = RgbColor(960,960,1023); // Very slighly bluish white
+    if ( _curr_dim == 0 )
+      _curr_dim = PWM_MAX;
+
+    _curr_color.rgb = RgbColor(12,9,60);
     _curr_color.RgbUpdated();
+
+    _dest_color = _curr_color;
   }
 
   _command = cmd;
@@ -140,17 +156,22 @@ RgbStripProperty::Command( EddieDevCommand cmd, Color col )
 {
   _curr_dir = 1;
 
-  if ( cmd == FADE_TO) {
+  if ( cmd == FADE_TO ) {
     _dest_color = col;
   } else {
+    _dest_color = col;
     _curr_color = col;
+
+
     _setColor( _curr_color );
   }
-  if ( cmd == SET_COLOR )
+
+  if ( cmd == SET_COLOR ) {
     if ( _command == OFF )
       _command = ON;
-  else
+  } else
     _command = cmd;
+
 }
 
 void
@@ -161,12 +182,12 @@ RgbStripProperty::_setColor( Color color )
   r = color.rgb.r;
   g = color.rgb.g;
   b = color.rgb.b;
-  Serial.print(r);
+  /*Serial.print(r);
   Serial.print(',');
   Serial.print(g);
   Serial.print(',');
   Serial.print(b);
-  Serial.println(';');
+  Serial.println(';');*/
 
   float dim = ((float)_curr_dim) / PWM_MAX;
 /*  Serial.print(_curr_dim);
@@ -210,13 +231,13 @@ RgbStripProperty::_setColor( Color color )
 #endif
 }
 
+/**
+  * Code that runs on each loop (unlocking)
+  *  This is the "heart" of the property/output control, the part that does all the effects
+  */
 void
 RgbStripProperty::Loop()
 {
-  /*if ( _command == OFF )
-    digitalWrite(BUILTIN_LED,LOW);
-  else
-    digitalWrite(BUILTIN_LED,HIGH);*/
 
   // If the output is just ON (= static) or OFF, then we have nothing to do
   if ( ( _command == ON ) || ( _command == OFF ) )
@@ -327,6 +348,8 @@ RgbStripProperty::Loop()
           (_curr_color.rgb.b == _dest_color.rgb.b) ) {
       // Select a random hue to fade to
       _dest_color.hsv.h = random(1023);
+      Serial.print("HUE::");
+      Serial.println(_dest_color.hsv.h);
       _dest_color.HsvUpdated();
     }
 
@@ -345,7 +368,6 @@ RgbStripProperty::Loop()
     else if ( _curr_color.rgb.b < _dest_color.rgb.b )
       _curr_color.rgb.b++;
 
-
     // Indicate that the RGB data was updated (convert it to HSV)
     _curr_color.RgbUpdated();
 
@@ -363,17 +385,47 @@ RgbStripProperty::Loop()
     // We use _curr_dir and _dim_to to not have to allocate another variable (and it's unused in this state)
     //  This might be subject to change in the future!!!
 
-    // Calculate a change for hue (from "default") (can go +-4)
-    _dim_to = (int)((double)random(4.0) * sin((double)_curr_dir / 255.0 * 2 * PI));
-    _curr_color.hsv.h = _dest_color.hsv.h + _dim_to;
+    if ( _curr_dir % 4 == 0 ) {
+      // Calculate a change for hue (from "default") (can go +-4)
+      _hsv_diff.A = (int)((double)random(42.0) * sin((double)_curr_dir / 1023.0 * 2 * PI)) - random(16);
+      _hsv_temp.h = _dest_color.hsv.h + _hsv_diff.A;
 
-    // Calculate a change for Saturation (from "default") (can go +-2)
-    _dim_to = (int)((double)random(2.0) * sin((double)_curr_dir / 255.0 * 2 * PI));
-    _curr_color.hsv.s = _dest_color.hsv.s + _dim_to;
+      // Calculate a change for Saturation (from "default") (can go +-2)
+      _hsv_diff.B = (int)((double)random(30.0) * sin((double)_curr_dir / 1023.0 * 2 * PI)) - random(42);
+      _hsv_temp.s = _dest_color.hsv.s + _hsv_diff.B;
 
-    // Calculate a change for value (from "default") (can go +-5)
-    _dim_to = (int)((double)random(5.0) * sin((double)_curr_dir / 255.0 * 2 * PI));
-    _curr_color.hsv.v = _dest_color.hsv.v + _dim_to;
+      // Calculate a change for value (from "default") (can go +-5)
+      _hsv_diff.C = (int)((double)random(90.0) * sin((double)_curr_dir / 1023.0 * 2 * PI));
+      _hsv_temp.v = _dest_color.hsv.v + _hsv_diff.C;
+
+      _curr_color.hsv = _dest_color.hsv;
+
+      _hsv_diff.A /= 3;
+      _hsv_diff.B /= 3;
+      _hsv_diff.C /= 3;
+    }
+
+    if ( (  _curr_color.hsv.h != _hsv_temp.h ) &&
+          (
+            ( _curr_color.hsv.h + _hsv_diff.A >= 0 ) &&
+            ( _curr_color.hsv.h + _hsv_diff.A <= 1023 )
+          )
+        )
+      _curr_color.hsv.h += _hsv_diff.A;
+    if ( ( _curr_color.hsv.s != _hsv_temp.s ) &&
+          (
+            ( _curr_color.hsv.s + _hsv_diff.B >= 0 ) &&
+            ( _curr_color.hsv.s + _hsv_diff.B <= 1023 )
+          )
+        )
+    _curr_color.hsv.s += _hsv_diff.B;
+    if ( ( _curr_color.hsv.v != _hsv_temp.v ) &&
+          (
+            ( _curr_color.hsv.v + _hsv_diff.C >= 0 ) &&
+            ( _curr_color.hsv.v + _hsv_diff.C <= 1023 )
+          )
+        )
+      _curr_color.hsv.v += _hsv_diff.C;
 
     _curr_dir++;
     if ( _curr_dir == 1024 )
@@ -381,7 +433,35 @@ RgbStripProperty::Loop()
 
     _curr_color.HsvUpdated();
 
-    _last_ms -= random(90);
+    _last_ms -= random(_speed / 3);
+
+  // Simulate lightning
+  } else if ( _command == LIGHTNING ) {
+    if ( ( _curr_dir > 100 ) && ( _curr_dir < 420 ) ) {
+      if ( _curr_dir % (1+(random(16))) == 0 )
+        _curr_color.hsv.v = _dest_color.hsv.v - MAP((120 - random(90)),120,(_dest_color.hsv.v/6));
+      if ( _curr_dir % (1+(random(12))) == 0 )
+        _curr_color.hsv.s = _dest_color.hsv.s - MAP((60 - random(90)),90,(_dest_color.hsv.s/6));
+    } else if ( _curr_dir % 16 == 0 ){
+      _dim_to = MAP((90 - random(30)),90,(_dest_color.hsv.v/9));
+      _curr_color.hsv.v = _dest_color.hsv.v - _dim_to;
+      _curr_color.hsv.s = _dest_color.hsv.s - MAP(random(30),30,(_dest_color.hsv.s/6));
+    }
+
+    _dim_to = random(_curr_dir % 64);
+    if ( ( _curr_dir % 128 < 8 ) && ( (_dim_to % 8) == 0 ) ) {
+      _curr_color.hsv.s = _dest_color.hsv.s - 600 - random(120) + _dim_to;
+      _curr_color.hsv.v = 1023 - (_curr_dir % 128) * 2 - _dim_to * 3;
+    } else if ( _dim_to % 8 == 0 ) {
+      _curr_color.hsv.s = _dest_color.hsv.s;
+      _curr_color.hsv.v = _dest_color.hsv.v;
+    }
+
+    _curr_dir++;
+    if ( _curr_dir == 1024 )
+      _curr_dir = 0;
+
+    _curr_color.HsvUpdated();
   }
 
   // Change the RGB output
