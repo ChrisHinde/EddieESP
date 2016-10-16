@@ -107,15 +107,13 @@ void setup() {
 
   ctrl = EddieCtrl();
   ctrl.RegisterProperty( new RgbStripProperty() );
-//  ctrl.RegisterProperty( new LampProperty() );*/
+  ctrl.RegisterProperty( new LampProperty() );
 
   setup_wifi();
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
 
   delay(100);
-//  rgbStrip = new RgbStripProperty();
-//  RgbStripPrperty();
 
     Serial.println("SETUP DONE!");
 }
